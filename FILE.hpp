@@ -7,16 +7,26 @@
 #include <stdlib.h>
 #include <vector>
 #include <algorithm> 
+#include <string>
 
 
 using namespace std;
 typedef struct Capteur Capteur;
+typedef struct _Solution_ _Solution_;
+
 struct Capteur
 {
     unsigned int Cout ;
     bool Actif ;
     vector<unsigned int> List_Cible , List_Activer ;
 };
+struct _Solution_
+{
+    unsigned int INDX , Cout ;
+    bool Actif ;
+    vector< unsigned int >  List_Cible ;
+};
+
 class File_Data
 {
 public:
@@ -29,12 +39,13 @@ public:
     void Activate_This_Capteur(unsigned int INDX_Capteur);
     void If_Not_in_Add_Vector( vector<unsigned int >& NEW_VECT , unsigned int Value );
     void INFO();
+    _Solution_ Create_Solution( unsigned int Index_Solution );
 unsigned int N , M ; // N nombre de capteur activable , M Nombre de cible
 unsigned int *Size_per_Capteur;// les coûts de déploiement des N capteurs // nombre de capteur pour chaque cible
 unsigned int **Cible_Capteur;// Matrice , chaque cible lier a une list de capteur
 Capteur *Data_CAPTEUR ; 
 bool *Activated_Cible ;
-vector< unsigned int > Solution ;
+vector< _Solution_ > List_Solution ;
 
 
 

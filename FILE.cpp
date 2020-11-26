@@ -102,10 +102,9 @@ unsigned int File_Data::Heuristique()
             }
         }
     }
-    printf(" INDEX %d \n", INDX);
     return INDX;
 }
-void File_Data::If_Not_in_Add_Vector(vector<unsigned int>& NEW_VECT, unsigned int Value)
+void File_Data::If_Not_in_Add_Vector(vector<unsigned int> &NEW_VECT, unsigned int Value)
 {
     if (find(NEW_VECT.begin(), NEW_VECT.end(), Value) == NEW_VECT.end())
     {
@@ -115,7 +114,7 @@ void File_Data::If_Not_in_Add_Vector(vector<unsigned int>& NEW_VECT, unsigned in
 void File_Data::Activate_This_Capteur(unsigned int INDX_Capteur)
 {
     Data_CAPTEUR[INDX_Capteur].Actif = true;
-    unsigned int j, h, INDX_Cible ,INDX ;
+    unsigned int j, h, INDX_Cible, INDX;
     for (j = 0; j < Data_CAPTEUR[INDX_Capteur].List_Cible.size(); j++)
     {
         INDX_Cible = Data_CAPTEUR[INDX_Capteur].List_Cible[j];
@@ -123,8 +122,8 @@ void File_Data::Activate_This_Capteur(unsigned int INDX_Capteur)
         Data_CAPTEUR[INDX_Capteur].List_Activer.push_back(INDX_Cible);
         for (h = 0; h < Size_per_Capteur[INDX_Cible]; h++)
         {
-            INDX = Cible_Capteur[INDX_Cible][h] ;
-            If_Not_in_Add_Vector( Data_CAPTEUR[INDX].List_Activer ,INDX_Cible );
+            INDX = Cible_Capteur[INDX_Cible][h];
+            If_Not_in_Add_Vector(Data_CAPTEUR[INDX].List_Activer, INDX_Cible);
         }
     }
 }
@@ -147,29 +146,39 @@ void File_Data::Glouton()
     {
         INDX = Heuristique();
         score += Data_CAPTEUR[INDX].Cout;
-        Solution.push_back(INDX);
+        List_Solution.push_back(Create_Solution(INDX));
         Activate_This_Capteur(INDX);
         STOP = check_Capteur();
     }
     printf("Score %d  ", score);
-    //INFO();
+    INFO();
 }
 void File_Data::INFO()
 {
-    unsigned int i;
-    for (i = 0; i < N; i++)
+    unsigned int i , j ;
+    printf(" Solution ==> \n");
+    for (i = 0; i < List_Solution.size(); i++)
     {
-        if( Data_CAPTEUR[i].List_Activer.size() > 0 )
+        printf(" %d ===> " , List_Solution[i].INDX);
+        for( j = 0 ; j < List_Solution[i].List_Cible.size() ; j++)
         {
-
-        printf("%d %d %d %.2f \n", Data_CAPTEUR[i].Actif,
-              Data_CAPTEUR[i].List_Cible.size(),
-               Data_CAPTEUR[i].List_Activer.size(), Get_Score(i));
+            printf(" %d ", List_Solution[i].List_Cible[j]);
         }
-    }
-    printf(" Solution ==> ");
-    for (i = 0; i < Solution.size(); i++)
-    {
-        printf(" %d ", Solution[i]);
+        printf(" \n ");
     }
 }
+_Solution_ File_Data::Create_Solution(unsigned int Index_Solution)
+{
+    _Solution_ New;
+    string Translate;
+    New.Cout = Data_CAPTEUR[Index_Solution].Cout;
+    New.INDX = Index_Solution;
+    New.Actif = true;
+    for(unsigned int i = 0; i < Data_CAPTEUR[Index_Solution].List_Cible.size(); i++)
+    {
+        New.List_Cible = Data_CAPTEUR[Index_Solution].List_Cible ;
+
+    }
+    return New;
+}
+//void File_Data::Reduction_()

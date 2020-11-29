@@ -11,10 +11,13 @@ File_Data::File_Data(char File_Name[])
         exit(EXIT_FAILURE);
     }
     fscanf(File, "%d %d", &M, &N);
+    // Allocation in Memory
     Data_CAPTEUR = new Capteur[N];
     Size_per_Capteur = new unsigned int[M];
     Activated_Cible = new bool[M];
     Cible_Capteur = new unsigned int *[M];
+    Matrice_Solution = new unsigned int *[List_Solution.size()];
+    SOM = new unsigned int[M];
     unsigned int NB_LIGNE = N / 12 + 1, INDX = 0, geter;
     for (i = 0; i < NB_LIGNE; i++)
     {
@@ -138,33 +141,53 @@ bool File_Data::check_Capteur()
     }
     return true;
 }
+void File_Data::Clear_ALL()
+{
+    unsigned int i;
+    for (i = 0; i < N; i++)
+    {
+        Data_CAPTEUR[i].Actif = false;
+        Data_CAPTEUR[i].List_Activer.clear();
+    }
+}
 void File_Data::Glouton()
 {
-    unsigned int score = 0, INDX;
+    unsigned int INDX;
     bool STOP = false;
     while (STOP == false)
     {
         INDX = Heuristique();
-        score += Data_CAPTEUR[INDX].Cout;
         List_Solution.push_back(Create_Solution(INDX));
         Activate_This_Capteur(INDX);
         STOP = check_Capteur();
     }
-    printf("Score %d  ", score);
-    INFO();
+    Sum_Score();
+    printf("\n Score Glouton %d  \n", Score);
+    //INFO();
 }
 void File_Data::INFO()
 {
-    unsigned int i , j ;
+    unsigned int i, j;
     printf(" Solution ==> \n");
     for (i = 0; i < List_Solution.size(); i++)
     {
-        printf(" %d ===> " , List_Solution[i].INDX);
-        for( j = 0 ; j < List_Solution[i].List_Cible.size() ; j++)
+        printf(" %d ===> ", List_Solution[i].INDX);
+        for (j = 0; j < List_Solution[i].List_Cible.size(); j++)
         {
             printf(" %d ", List_Solution[i].List_Cible[j]);
         }
         printf(" \n ");
+    }
+}
+void File_Data::Sum_Score()
+{
+    Score = 0;
+    for (unsigned int i = 0; i < List_Solution.size(); i++)
+    {
+        if (List_Solution[i].Actif == true)
+        {
+            Score += List_Solution[i].Cout;
+        }
     }
 }
 _Solution_ File_Data::Create_Solution(unsigned int Index_Solution)
@@ -174,11 +197,202 @@ _Solution_ File_Data::Create_Solution(unsigned int Index_Solution)
     New.Cout = Data_CAPTEUR[Index_Solution].Cout;
     New.INDX = Index_Solution;
     New.Actif = true;
-    for(unsigned int i = 0; i < Data_CAPTEUR[Index_Solution].List_Cible.size(); i++)
+    for (unsigned int i = 0; i < Data_CAPTEUR[Index_Solution].List_Cible.size(); i++)
     {
-        New.List_Cible = Data_CAPTEUR[Index_Solution].List_Cible ;
-
+        New.List_Cible = Data_CAPTEUR[Index_Solution].List_Cible;
     }
     return New;
 }
-//void File_Data::Reduction_()
+bool File_Data::Same_As(unsigned int X, unsigned int XX, unsigned int Y)
+{
+    unsigned int i;
+    for (i = Y; i < M; i++)
+    {
+        if (Matrice_Solution[X][i] == 1)
+        {
+            if (Matrice_Solution[XX][i] != 1)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+void File_Data::Update_Matrice_Solution()
+{
+    unsigned int i, j, y;
+    for (i = 0; i < List_Solution.size(); i++)
+    {
+        Matrice_Solution[i] = new unsigned int[M];
+        for (j = 0; j < M; j++)
+        {
+            Matrice_Solution[i][j] = 0;
+        }
+    }
+    for (j = 0; j < M; j++)
+    {
+        SOM[j] = 0;
+    }
+    for (i = 0; i < List_Solution.size(); i++)
+    {
+        if (List_Solution[i].Actif == true)
+        {
+            for (j = 0; j < List_Solution[i].List_Cible.size(); j++)
+            {
+
+                y = List_Solution[i].List_Cible[j];
+                Matrice_Solution[i][y]++;
+                SOM[y]++;
+            }
+        }
+    }
+}
+void File_Data::Show_Matrice_Solution()
+{
+    unsigned int i, j;
+    printf("\n");
+    for (i = 0; i < List_Solution.size(); i++)
+    {
+        for (j = 0; j < M; j++)
+        {
+            printf("%d", Matrice_Solution[i][j]);
+        }
+        printf("\n");
+    }
+    for (j = 0; j < M; j++)
+    {
+        printf("%d", SOM[j]);
+    }
+}
+bool File_Data::IF_Useless(unsigned int INDX)
+{
+    unsigned int i, j, *SOMM = new unsigned int[M];
+    for (j = 0; j < List_Solution.size(); j++)
+    {
+        SOMM[j] = 0;
+    }
+    for (i = 0; i < M; i++)
+    {
+        for (j = 0; j < List_Solution.size(); j++)
+        {
+            if (j != INDX)
+            {
+                if (Matrice_Solution[j][i] == 1)
+                {
+                    SOMM[i]++;
+                }
+            }
+        }
+        if (SOMM[i] == 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+float File_Data::Get_Score_Without(unsigned int INDX)
+{
+    Update_Matrice_Solution();
+    unsigned int i, cible, score = 0;
+    for (i = 0; i < List_Solution[INDX].List_Cible.size(); i++)
+    {
+        cible = List_Solution[INDX].List_Cible[i];
+        score += SOM[cible] - 1;
+    }
+    return score;
+}
+void File_Data::Reduction_Solution()
+{
+    unsigned int i;
+    double cout = 0, best = 0;
+    int to_reduce = -1;
+    vector<unsigned int> Choix_Reduction;
+    Update_Matrice_Solution();
+
+    do
+    {
+        to_reduce = -1;
+        cout = 0, best = 0;
+        for (i = 0; i < List_Solution.size(); i++)
+        {
+            if (List_Solution[i].Actif == true)
+            {
+                if (IF_Useless(i) == true)
+                {
+                    cout = List_Solution[i].Cout;
+                    if (cout > best)
+                    {
+                        best = cout;
+                        to_reduce = i;
+                    }
+                }
+            }
+        }
+        List_Solution[to_reduce].Actif = false;
+        Update_Matrice_Solution();
+
+    } while (to_reduce != -1);
+
+    Sum_Score();
+    printf("Nouveau Score Glouton Optimise %d \n", Score);
+    // Analyse
+    /*for (i = 0; i < List_Solution.size(); i++)
+    {
+        for (j = 0; j < M; j++)
+        {
+            if (SOM[j] > 1)
+            {
+                if (Matrice_Solution[i][j] == 1)
+                {
+                    for (x = i + 1; x < List_Solution.size(); x++)
+                    {
+                        if (Matrice_Solution[x][j] == 1)
+                        {
+                            if (Same_As(i, x, j) == true)
+                            {
+                                printf(" %d %d \n", i, x);
+                                res.X = i;
+                                res.XX = x;
+                                Reduction.push_back(res);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
+*/
+    //Show
+}
+void File_Data::Bool_Solution()
+{
+    Activated_Capteur = new char[N];
+    unsigned int i, INDX;
+    for (i = 0; i < N; i++)
+    {
+        Activated_Capteur[i] = '0';
+    }
+    for (i = 0; i < List_Solution.size(); i++)
+    {
+        INDX = List_Solution[i].INDX;
+        if (List_Solution[i].Actif == true)
+        {
+            Activated_Capteur[INDX] = '1';
+        }
+    }
+}
+void File_Data::Save_Solution(char Out_put[])
+{
+    Bool_Solution();
+    FILE *File_OUT;
+    File_OUT = fopen(Out_put, "w");
+    for (unsigned int i = 0; i < N; i++)
+    {
+        fprintf(File_OUT, "%c ", Activated_Capteur[i]);
+    }
+    fclose(File_OUT);
+}

@@ -16,7 +16,6 @@ File_Data::File_Data(char File_Name[])
     Size_per_Capteur = new unsigned int[M];
     Activated_Cible = new bool[M];
     Cible_Capteur = new unsigned int *[M];
-    Matrice_Solution = new unsigned int *[List_Solution.size()];
     SOM = new unsigned int[M];
     unsigned int NB_LIGNE = N / 12 + 1, INDX = 0, geter;
     for (i = 0; i < NB_LIGNE; i++)
@@ -221,6 +220,7 @@ bool File_Data::Same_As(unsigned int X, unsigned int XX, unsigned int Y)
 void File_Data::Update_Matrice_Solution()
 {
     unsigned int i, j, y;
+    Matrice_Solution = new unsigned int *[List_Solution.size()];
     for (i = 0; i < List_Solution.size(); i++)
     {
         Matrice_Solution[i] = new unsigned int[M];
